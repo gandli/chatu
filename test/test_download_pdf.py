@@ -49,8 +49,7 @@ def has_text(pdf_path):
     with open(pdf_path, 'rb') as file:
         pdf = PdfReader(file)
         page = pdf.pages[0]
-        text = page.extract_text()
-        return text
+        return page.extract_text()
 
 pdf_path = '/Users/yanyuming/Downloads/GitHub/ChatGPT-Telegram-Bot/冻结裂隙砂岩低周循环动力特性试验研究.pdf'
 print(has_text(pdf_path))

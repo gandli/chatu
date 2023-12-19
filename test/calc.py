@@ -77,8 +77,7 @@ async def button_press(update, context):
         dot_dot_check = re.findall(r"(\d*\.\.|\d*\.\d+\.)", inpt)
         opcheck = re.findall(r"([*/\+-]{2,})", inpt)
         if not dot_dot_check and not opcheck:
-            strOperands = re.findall(r"(\.\d+|\d+\.\d+|\d+)", inpt)
-            if strOperands:
+            if strOperands := re.findall(r"(\.\d+|\d+\.\d+|\d+)", inpt):
                 text += data
                 print(text)
                 result = calcExpression(text)
@@ -96,7 +95,6 @@ async def button_press(update, context):
         )
     except Exception as e:
         logger.info(e)
-        pass
 
 async def start_handler(update, context):
     """Send a message when the command /start is issued."""

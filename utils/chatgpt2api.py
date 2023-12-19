@@ -94,7 +94,7 @@ class claudebot:
         Add a message to the conversation
         """
 
-        if convo_id not in self.conversation or pass_history == False:
+        if convo_id not in self.conversation or not pass_history:
             self.reset(convo_id=convo_id)
         self.conversation[convo_id].append({"role": role, "content": message})
 
@@ -102,7 +102,7 @@ class claudebot:
         """
         Reset the conversation
         """
-        self.conversation[convo_id] = list()
+        self.conversation[convo_id] = []
 
     def __truncate_conversation(self, convo_id: str = "default") -> None:
         """
@@ -152,7 +152,7 @@ class claudebot:
         **kwargs,
     ):
         pass_history = True
-        if convo_id not in self.conversation or pass_history == False:
+        if convo_id not in self.conversation or not pass_history:
             self.reset(convo_id=convo_id)
         self.add_to_conversation(prompt, role, convo_id=convo_id)
         # self.__truncate_conversation(convo_id=convo_id)
@@ -192,8 +192,7 @@ class claudebot:
             line = line.decode("utf-8")[6:]
             # print(line)
             resp: dict = json.loads(line)
-            content = resp.get("completion")
-            if content:
+            if content := resp.get("completion"):
                 full_response += content
                 yield content
         self.add_to_conversation(full_response, response_role, convo_id=convo_id)
@@ -238,8 +237,7 @@ class Imagebot:
                 f"{response.status_code} {response.reason} {response.text}",
             )
         json_data = json.loads(response.text)
-        url = json_data["data"][0]["url"]
-        yield url
+        yield json_data["data"][0]["url"]
 
 class Chatbot:
     """
@@ -352,7 +350,7 @@ class Chatbot:
         """
         if convo_id not in self.conversation:
             self.reset(convo_id=convo_id)
-        if function_name == "" and message != "" and message != None:
+        if not function_name and message != "" and message != None:
             self.conversation[convo_id].append({"role": role, "content": message})
         elif function_name != "" and message != "" and message != None:
             self.conversation[convo_id].append({"role": role, "name": function_name, "content": message})
@@ -392,7 +390,7 @@ class Chatbot:
         while True:
             json_post = self.get_post_body(prompt, role, convo_id, model, pass_history, **kwargs)
             url = config.bot_api_url.chat_url
-            if self.engine == "gpt-4-1106-preview" or self.engine == "claude-2":
+            if self.engine in ["gpt-4-1106-preview", "claude-2"]:
                 message_token = {
                     "total": self.get_token_count(convo_id),
                 }
@@ -534,17 +532,17 @@ class Chatbot:
         Ask a question
         """
         # Make conversation if it doesn't exist
-        if convo_id not in self.conversation or pass_history == False:
+        if convo_id not in self.conversation or not pass_history:
             self.reset(convo_id=convo_id, system_prompt=self.system_prompt)
         self.add_to_conversation(prompt, role, convo_id=convo_id, function_name=function_name)
         json_post, message_token = self.truncate_conversation(prompt, role, convo_id, model, pass_history, **kwargs)
         print(json.dumps(json_post, indent=4, ensure_ascii=False))
         # print(self.conversation[convo_id])
 
-        if self.engine == "gpt-4-1106-preview":
-            model_max_tokens = kwargs.get("max_tokens", self.max_tokens)
-        elif self.engine == "gpt-3.5-turbo-1106":
+        if self.engine == "gpt-3.5-turbo-1106":
             model_max_tokens = min(kwargs.get("max_tokens", self.max_tokens), 16385 - message_token["total"])
+        elif self.engine == "gpt-4-1106-preview":
+            model_max_tokens = kwargs.get("max_tokens", self.max_tokens)
         else:
             model_max_tokens = min(kwargs.get("max_tokens", self.max_tokens), self.max_tokens - message_token["total"])
         print("model_max_tokens", model_max_tokens)
@@ -626,15 +624,10 @@ class Chatbot:
                     function_response = encoding.decode(self.encode_web_text_list[:function_call_max_tokens])
                     self.encode_web_text_list = self.encode_web_text_list[function_call_max_tokens:]
                     # function_response = eval(function_call_name)(prompt, function_call_max_tokens)
-                    function_response = (
-                        "Here is the Search results, inside <Search_results></Search_results> XML tags:"
-                        "<Search_results>"
-                        "{}"
-                        "</Search_results>"
-                    ).format(function_response)
+                    function_response = f"Here is the Search results, inside <Search_results></Search_results> XML tags:<Search_results>{function_response}</Search_results>"
                     user_prompt = f"You need to response the following question: {prompt}. Search results is provided inside <Search_results></Search_results> XML tags. Your task is to think about the question step by step and then answer the above question in {config.LANGUAGE} based on the Search results provided. Please response in {config.LANGUAGE} and adopt a style that is logical, in-depth, and detailed. Note: In order to make the answer appear highly professional, you should be an expert in textual analysis, aiming to make the answer precise and comprehensive. Directly response markdown format, without using markdown code blocks"
                     self.add_to_conversation(user_prompt, "user", convo_id=convo_id)
-                if function_call_name == "get_url_content":
+                elif function_call_name == "get_url_content":
                     url = json.loads(full_response)["url"]
                     print("\n\nurl", url)
                     function_response = Web_crawler(url)
@@ -669,7 +662,7 @@ class Chatbot:
         Ask a question
         """
         # Make conversation if it doesn't exist
-        if convo_id not in self.conversation or pass_history == False:
+        if convo_id not in self.conversation or not pass_history:
             self.reset(convo_id=convo_id, system_prompt=self.system_prompt)
         self.add_to_conversation(prompt, "user", convo_id=convo_id)
         self.__truncate_conversation(convo_id=convo_id)

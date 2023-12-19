@@ -29,7 +29,7 @@ def replace_all(text, pattern, function):
     return ''.join(new_list)
 
 def escapeshape(text):
-    return '▎*' + text.split()[1] + '*'
+    return f'▎*{text.split()[1]}*'
 
 def escapeminus(text):
     return '\\' + text

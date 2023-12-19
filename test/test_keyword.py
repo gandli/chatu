@@ -11,10 +11,11 @@ def getgooglesearchurl(result, numresults=1):
     google_search = GoogleSearchAPIWrapper()
     urls = []
     googleresult = google_search.results(result, numresults)
-    for i in googleresult:
-        if "No good Google Search Result was found" in i:
-            continue
-        urls.append(i["link"])
+    urls.extend(
+        i["link"]
+        for i in googleresult
+        if "No good Google Search Result was found" not in i
+    )
     return urls
 
 chainllm = ChatOpenAI(temperature=0.5, openai_api_base=os.environ.get('API_URL', None).split("chat")[0], model_name="gpt-3.5-turbo-1106", openai_api_key=os.environ.get('API', None))

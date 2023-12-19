@@ -80,7 +80,7 @@ def Web_crawler(url: str, isSearch=False) -> str:
             print("Skipping large file:", url)
             return result
         soup = BeautifulSoup(response.text.encode(response.encoding), 'lxml', from_encoding='utf-8')
-        
+
         table_contents = ""
         tables = soup.find_all('table')
         for table in tables:
@@ -88,7 +88,7 @@ def Web_crawler(url: str, isSearch=False) -> str:
             table.decompose()
         body = "".join(soup.find('body').get_text().split('\n'))
         result = table_contents + body
-        if result == '' and not isSearch:
+        if not result and not isSearch:
             result = "抱歉，可能反爬虫策略，目前无法访问该网页。@Trash@"
         if result.count("\"") > 1000:
             result = ""
