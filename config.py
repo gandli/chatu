@@ -7,14 +7,17 @@ BOT_TOKEN = os.environ.get('BOT_TOKEN', None)
 PORT = int(os.environ.get('PORT', '8080'))
 NICK = os.environ.get('NICK', None)
 API = os.environ.get('API', None)
-PASS_HISTORY = (os.environ.get('PASS_HISTORY', "False") == "False") == False
-USE_GOOGLE = (os.environ.get('USE_GOOGLE', "True") == "False") == False
-if os.environ.get('GOOGLE_API_KEY', None) == None and os.environ.get('GOOGLE_CSE_ID', None) == None:
+PASS_HISTORY = os.environ.get('PASS_HISTORY', "False") != "False"
+USE_GOOGLE = os.environ.get('USE_GOOGLE', "True") != "False"
+if (
+    os.environ.get('GOOGLE_API_KEY', None) is None
+    and os.environ.get('GOOGLE_CSE_ID', None) is None
+):
     USE_GOOGLE = False
 temperature = float(os.environ.get('temperature', '0.5'))
 GPT_ENGINE = os.environ.get('GPT_ENGINE', 'gpt-4-1106-preview')
 # DEFAULT_SEARCH_MODEL = os.environ.get('DEFAULT_SEARCH_MODEL', 'gpt-3.5-turbo-1106') gpt-3.5-turbo-16k
-SEARCH_USE_GPT = (os.environ.get('SEARCH_USE_GPT', "True") == "False") == False
+SEARCH_USE_GPT = os.environ.get('SEARCH_USE_GPT', "True") != "False"
 API_URL = os.environ.get('API_URL', 'https://api.openai.com/v1/chat/completions')
 # PDF_EMBEDDING = (os.environ.get('PDF_EMBEDDING', "True") == "False") == False
 LANGUAGE = os.environ.get('LANGUAGE', 'Simplified Chinese')
@@ -34,18 +37,14 @@ if API:
 else:
     ChatGPTbot = None
 
-ClaudeAPI = os.environ.get('claude_api_key', None)
-if ClaudeAPI:
+if ClaudeAPI := os.environ.get('claude_api_key', None):
     claudeBot = claudebot(api_key=f"{ClaudeAPI}")
 
-whitelist = os.environ.get('whitelist', None)
-if whitelist:
+if whitelist := os.environ.get('whitelist', None):
     whitelist = [int(id) for id in whitelist.split(",")]
-ADMIN_LIST = os.environ.get('ADMIN_LIST', None)
-if ADMIN_LIST:
+if ADMIN_LIST := os.environ.get('ADMIN_LIST', None):
     ADMIN_LIST = [int(id) for id in ADMIN_LIST.split(",")]
-GROUP_LIST = os.environ.get('GROUP_LIST', None)
-if GROUP_LIST:
+if GROUP_LIST := os.environ.get('GROUP_LIST', None):
     GROUP_LIST = [int(id) for id in GROUP_LIST.split(",")]
 
 USE_G4F = False

@@ -85,7 +85,7 @@ class claudebot:
         """
         Reset the conversation
         """
-        self.conversation[convo_id] = list()
+        self.conversation[convo_id] = []
 
     def __truncate_conversation(self, convo_id: str = "default") -> None:
         """
@@ -136,7 +136,7 @@ class claudebot:
         model_max_tokens: int = 4096,
         **kwargs,
     ):
-        if convo_id not in self.conversation or pass_history == False:
+        if convo_id not in self.conversation or not pass_history:
             self.reset(convo_id=convo_id)
         self.add_to_conversation(prompt, role, convo_id=convo_id)
         # self.__truncate_conversation(convo_id=convo_id)

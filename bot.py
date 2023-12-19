@@ -101,7 +101,7 @@ async def getChatGPT(update, context, title, robot, message, chatid, messageid):
             tmpresult = result
             modifytime = modifytime + 1
             if re.sub(r"```", '', result).count("`") % 2 != 0:
-                tmpresult = result + "`"
+                tmpresult = f"{result}`"
             if result.count("```") % 2 != 0:
                 tmpresult = result + "\n```"
             if modifytime % 20 == 0 and lastresult != tmpresult:
@@ -253,7 +253,10 @@ first_buttons = [
         InlineKeyboardButton("gpt4free已关闭", callback_data="gpt4free"),
     ],
 ]
-if os.environ.get('GOOGLE_API_KEY', None) == None and os.environ.get('GOOGLE_CSE_ID', None) == None:
+if (
+    os.environ.get('GOOGLE_API_KEY', None) is None
+    and os.environ.get('GOOGLE_CSE_ID', None) is None
+):
     first_buttons[1][1] = InlineKeyboardButton("google已关闭", callback_data="google")
 
 def replace_with_asterisk(string, start=10, end=45):
@@ -295,7 +298,6 @@ async def button_press(update, context):
             )
         except Exception as e:
             logger.info(e)
-            pass
     elif "更换问答模型" in data:
         message = await callback_query.edit_message_text(
             text=escape(info_message + banner),
@@ -334,7 +336,10 @@ async def button_press(update, context):
             parse_mode='MarkdownV2'
         )
     elif "google" in data:
-        if os.environ.get('GOOGLE_API_KEY', None) == None and os.environ.get('GOOGLE_CSE_ID', None) == None:
+        if (
+            os.environ.get('GOOGLE_API_KEY', None) is None
+            and os.environ.get('GOOGLE_CSE_ID', None) == None
+        ):
             return
         config.USE_GOOGLE = not config.USE_GOOGLE
         if config.USE_GOOGLE == False:

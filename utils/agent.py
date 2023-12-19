@@ -44,23 +44,19 @@ def getmd5(string):
     import hashlib
     md5_hash = hashlib.md5()
     md5_hash.update(string.encode('utf-8'))
-    md5_hex = md5_hash.hexdigest()
-    return md5_hex
+    return md5_hash.hexdigest()
 
 from utils.sitemap import SitemapLoader
 async def get_doc_from_sitemap(url):
     # https://www.langchain.asia/modules/indexes/document_loaders/examples/sitemap#%E8%BF%87%E6%BB%A4%E7%AB%99%E7%82%B9%E5%9C%B0%E5%9B%BE-url-
     sitemap_loader = SitemapLoader(web_path=url)
-    docs = await sitemap_loader.load()
-    return docs
+    return await sitemap_loader.load()
 
 async def get_doc_from_local(docpath, doctype="md"):
     from langchain.document_loaders import DirectoryLoader
     # 加载文件夹中的所有txt类型的文件
-    loader = DirectoryLoader(docpath, glob='**/*.' + doctype)
-    # 将数据转成 document 对象，每个文件会作为一个 document
-    documents = loader.load()
-    return documents
+    loader = DirectoryLoader(docpath, glob=f'**/*.{doctype}')
+    return loader.load()
 
 system_template="""Use the following pieces of context to answer the users question. 
 If you don't know the answer, just say "Hmm..., I'm not sure.", don't try to make up an answer.
@@ -88,23 +84,21 @@ prompt = ChatPromptTemplate.from_messages(messages)
 
 def get_chain(store, llm):
     chain_type_kwargs = {"prompt": prompt}
-    chain = RetrievalQAWithSourcesChain.from_chain_type(
-        llm, 
-        chain_type="stuff", 
+    return RetrievalQAWithSourcesChain.from_chain_type(
+        llm,
+        chain_type="stuff",
         retriever=store.as_retriever(),
         chain_type_kwargs=chain_type_kwargs,
-        reduce_k_below_max_tokens=True
+        reduce_k_below_max_tokens=True,
     )
-    return chain
 
 async def docQA(docpath, query_message, persist_db_path="db", model = "gpt-3.5-turbo"):
     chatllm = ChatOpenAI(temperature=0.5, openai_api_base=config.bot_api_url.v1_url, model_name=model, openai_api_key=config.API)
     embeddings = OpenAIEmbeddings(openai_api_base=config.bot_api_url.v1_url, openai_api_key=config.API)
 
-    sitemap = "sitemap.xml"
-    match = re.match(r'^(https?|ftp)://[^\s/$.?#].[^\s]*$', docpath)
-    if match:
+    if match := re.match(r'^(https?|ftp)://[^\s/$.?#].[^\s]*$', docpath):
         doc_method = get_doc_from_sitemap
+        sitemap = "sitemap.xml"
         docpath = os.path.join(docpath, sitemap)
     else:
         doc_method = get_doc_from_local
@@ -124,10 +118,7 @@ async def docQA(docpath, query_message, persist_db_path="db", model = "gpt-3.5-t
 
     # 创建问答对象
     qa = get_chain(vector_store, chatllm)
-    # qa = RetrievalQA.from_chain_type(llm=chatllm, chain_type="stuff", retriever=vector_store.as_retriever(), return_source_documents=True)
-    # 进行问答
-    result = qa({"question": query_message})
-    return result
+    return qa({"question": query_message})
 
 def get_doc_from_url(url):
     filename = urllib.parse.unquote(url.split("/")[-1])
@@ -140,7 +131,7 @@ def get_doc_from_url(url):
 def persist_emdedding_pdf(docurl, persist_db_path):
     embeddings = OpenAIEmbeddings(openai_api_base=config.bot_api_url.v1_url, openai_api_key=os.environ.get('API', None))
     filename = get_doc_from_url(docurl)
-    docpath = os.getcwd() + "/" + filename
+    docpath = f"{os.getcwd()}/{filename}"
     loader = UnstructuredPDFLoader(docpath)
     documents = loader.load()
     # 初始化加载器
@@ -168,7 +159,7 @@ def pdf_search(docurl, query_message, model="gpt-3.5-turbo"):
     chatllm = ChatOpenAI(temperature=0.5, openai_api_base=config.bot_api_url.v1_url, model_name=model, openai_api_key=os.environ.get('API', None))
     embeddings = OpenAIEmbeddings(openai_api_base=config.bot_api_url.v1_url, openai_api_key=os.environ.get('API', None))
     filename = get_doc_from_url(docurl)
-    docpath = os.getcwd() + "/" + filename
+    docpath = f"{os.getcwd()}/{filename}"
     loader = UnstructuredPDFLoader(docpath)
     try:
         documents = loader.load()
@@ -189,19 +180,14 @@ def pdf_search(docurl, query_message, model="gpt-3.5-turbo"):
 
 def Document_extract(docurl):
     filename = get_doc_from_url(docurl)
-    docpath = os.getcwd() + "/" + filename
+    docpath = f"{os.getcwd()}/{filename}"
     if filename[-3:] == "pdf":
         from pdfminer.high_level import extract_text
         text = extract_text(docpath)
     if filename[-3:] == "txt":
         with open(docpath, 'r') as f:
             text = f.read()
-    prompt = (
-        "Here is the document, inside <document></document> XML tags:"
-        "<document>"
-        "{}"
-        "</document>"
-    ).format(text)
+    prompt = f"Here is the document, inside <document></document> XML tags:<document>{text}</document>"
     os.remove(docpath)
     return prompt
 
@@ -243,7 +229,7 @@ class ChainStreamHandler(StreamingStdOutCallbackHandler):
         self.finish = 1
 
     def on_llm_error(self, error: Exception, **kwargs: Any) -> None:
-        print(str(error))
+        print(error)
         self.tokens.append(str(error))
 
     def generate_tokens(self):
@@ -252,8 +238,6 @@ class ChainStreamHandler(StreamingStdOutCallbackHandler):
                 data = self.tokens.pop(0)
                 self.answer += data
                 yield data
-            else:
-                pass
         return self.answer
     
 class ThreadWithReturnValue(threading.Thread):
@@ -282,7 +266,7 @@ def Web_crawler(url: str, isSearch=False) -> str:
             print("Skipping large file:", url)
             return result
         soup = BeautifulSoup(response.text.encode(response.encoding), 'lxml', from_encoding='utf-8')
-        
+
         table_contents = ""
         tables = soup.find_all('table')
         for table in tables:
@@ -290,7 +274,7 @@ def Web_crawler(url: str, isSearch=False) -> str:
             table.decompose()
         body = "".join(soup.find('body').get_text().split('\n'))
         result = table_contents + body
-        if result == '' and not isSearch:
+        if not result and not isSearch:
             result = "抱歉，可能反爬虫策略，目前无法访问该网页。@Trash@"
         if result.count("\"") > 1000:
             result = ""
@@ -306,7 +290,7 @@ def getddgsearchurl(result, numresults=3):
     try:
         search = DuckDuckGoSearchResults(num_results=numresults)
         webresult = search.run(result)
-        if webresult == None:
+        if webresult is None:
             return []
         urls = re.findall(r"(https?://\S+)\]", webresult, re.MULTILINE)
     except Exception as e:
@@ -321,10 +305,12 @@ def getgooglesearchurl(result, numresults=3):
     urls = []
     try:
         googleresult = google_search.results(result, numresults)
-        for i in googleresult:
-            if "No good Google Search Result was found" in i or "google.com" in i["link"]:
-                continue
-            urls.append(i["link"])
+        urls.extend(
+            i["link"]
+            for i in googleresult
+            if "No good Google Search Result was found" not in i
+            and "google.com" not in i["link"]
+        )
     except Exception as e:
         print('\033[31m')
         print("error", e)
@@ -417,8 +403,7 @@ def get_search_url(prompt, chainllm):
 def concat_url(threads):
     url_result = []
     for t in threads:
-        tmp = t.join()
-        if tmp:
+        if tmp := t.join():
             url_result.append(tmp)
     return url_result
 
@@ -524,15 +509,14 @@ def get_date_time_weekday():
     now = datetime.datetime.now(tz)  # 获取东八区当前时间
     weekday = now.weekday()
     weekday_str = ['星期一', '星期二', '星期三', '星期四', '星期五', '星期六', '星期日'][weekday]
-    return "今天是：" + str(now.date()) + "，现在的时间是：" + str(now.time())[:-7] + "，" + weekday_str
+    return f"今天是：{str(now.date())}，现在的时间是：{str(now.time())[:-7]}，{weekday_str}"
 
 # 使用函数
 def get_version_info():
     import subprocess
     current_directory = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
     result = subprocess.run(['git', '-C', current_directory, 'log', '-1'], stdout=subprocess.PIPE)
-    output = result.stdout.decode()
-    return output
+    return result.stdout.decode()
 
 if __name__ == "__main__":
     os.system("clear")

@@ -7,8 +7,7 @@ from langchain.tools import DuckDuckGoSearchResults
 def getddgsearchurl(result, numresults=3):
     search = DuckDuckGoSearchResults(num_results=numresults)
     webresult = search.run(result)
-    urls = re.findall(r"(https?://\S+)\]", webresult, re.MULTILINE)
-    return urls
+    return re.findall(r"(https?://\S+)\]", webresult, re.MULTILINE)
 
 urls = getddgsearchurl("你知道今天有什么热点新闻吗")
 print(urls)
